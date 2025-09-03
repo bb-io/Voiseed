@@ -1,4 +1,5 @@
-﻿using Tests.Voiseed.Base;
+﻿using Apps.Voiseed.Polling.Models;
+using Tests.Voiseed.Base;
 
 namespace Tests.Voiseed
 {
@@ -11,16 +12,16 @@ namespace Tests.Voiseed
         {
 
             var pollingList = new Apps.Voiseed.Polling.PollingList(InvocationContext);
-            var memory = new Apps.Voiseed.Polling.Models.DateMemory
+            var memory = new DateMemory
             {
-                LastInteractionDate = DateTime.UtcNow.AddMinutes(-10),
-                LastStatus = "PENDING"
+                //LastInteractionDate = DateTime.UtcNow.AddMinutes(-10),
+                //LastStatus = "PENDING"
             };
-            var request = new Blackbird.Applications.Sdk.Common.Polling.PollingEventRequest<Apps.Voiseed.Polling.Models.DateMemory>
+            var request = new Blackbird.Applications.Sdk.Common.Polling.PollingEventRequest<DateMemory>
             {
                 Memory = memory
             };
-            string requestId = "9e08a0b4-2328-4e16-9012-4280ffba783b";
+            string requestId = "4cc0c8b4-96fc-4bea-8450-87e966284db3";
             var response = await pollingList.OnConvertTextToSpeechCompleted(request, requestId);
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(response);
             Console.WriteLine(json);
