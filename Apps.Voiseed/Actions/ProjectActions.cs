@@ -25,7 +25,7 @@ public class ProjectActions(InvocationContext invocationContext) : Invocable(inv
     }
 
     [Action("Get project", Description = "Gets project by ID")]
-    public async Task<ProjectDto> SearchProjects([ActionParameter] string projectId)
+    public async Task<ProjectDto> SearchProjects([ActionParameter][Display("Project ID")] string projectId)
     {
         var endpoint = $"/projects/{projectId}";
 

@@ -18,8 +18,8 @@ namespace Apps.Voiseed.Models.Speech
         public string Voice { get; set; }
 
         [Display("Styles")]
-
-        public IEnumerable<string> Styles { get; set; } = Array.Empty<string>();
+        [DataSource(typeof(VoiceStylesDataHandler))]
+        public IEnumerable<string> Styles { get; set; }
 
         [Display("Glossary IDs")]
         [DataSource(typeof(GlossariesDataHandler))]
