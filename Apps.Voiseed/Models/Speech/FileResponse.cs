@@ -4,6 +4,6 @@ namespace Apps.Voiseed.Models.Speech
 {
     public class FileResponse
     {
-        public FileReference File { get; set; }
+        public IEnumerable<FileReference> Files { get; set; }
     }
 }
