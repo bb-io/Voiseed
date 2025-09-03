@@ -9,10 +9,6 @@ namespace Apps.Voiseed.Models.Speech
     {
         public IEnumerable<string> Text { get; set; }
 
-        [Display("Model")]
-        [DataSource(typeof(ModelsDataHandler))]
-        public string Model { get; set; }
-
         [Display("Language")]
         [DataSource(typeof(LanguagesDataHandler))]
         public string LanguageId { get; set; }

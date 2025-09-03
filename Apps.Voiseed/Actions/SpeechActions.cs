@@ -14,7 +14,8 @@ namespace Apps.Voiseed.Actions
     public class SpeechActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
     {
         [Action("Convert text to speech", Description = "Convert provided text to a speech with selected settings")]
-        public async Task<TextToSpeechResponse> ConvertTextToSpeech([ActionParameter] TextToSpeechRequest input)
+        public async Task<TextToSpeechResponse> ConvertTextToSpeech([ActionParameter] TextToSpeechRequest input,
+            [ActionParameter] ModelRequest model)
         {
             var styles = (input.Styles ?? Array.Empty<string>()).ToArray();
             if (styles.Length == 0) styles = new[] { "neutral" };
@@ -23,7 +24,7 @@ namespace Apps.Voiseed.Actions
             {
                 ["texts"] = input.Text,
                 ["styles"] = styles,
-                ["model"] = input.Model,
+                ["model"] = model.Model,
                 ["languageId"] = input.LanguageId,
                 ["voice"] = input.Voice
             };

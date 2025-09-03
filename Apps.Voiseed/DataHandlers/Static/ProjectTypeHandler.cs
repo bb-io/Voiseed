@@ -8,9 +8,9 @@ public class ProjectTypeHandler : IStaticDataSourceItemHandler
     {
         return new List<DataSourceItem>
         {
-            new("Line dubbing", "line-dubbing"),
-            new("Media dubbing", "media-dubbing"),
-            new("Audio production", "audio-production"),
+            new("line-dubbing", "Line dubbing"),
+            new("media-dubbing", "Media dubbing"),
+            new("audio-production", "Audio production"),
         };
     }
 }
