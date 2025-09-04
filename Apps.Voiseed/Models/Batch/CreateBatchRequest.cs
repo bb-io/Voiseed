@@ -1,5 +1,6 @@
 ﻿using Apps.Voiseed.DataHandlers.Static;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Voiseed.Models.Batch
@@ -10,7 +11,7 @@ namespace Apps.Voiseed.Models.Batch
         public string ProjectId { get; set; }
 
         [Display("Language")]
-        [DataSource(typeof(BatchLanguagesDataHandler))]
+        [StaticDataSource(typeof(BatchLanguagesDataHandler))]
         public string LanguageId { get; set; }
 
         [Display("Script URL (http/https)")]
