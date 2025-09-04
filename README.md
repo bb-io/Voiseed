@@ -35,7 +35,7 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 ## Example
 
-![Example](/)
+![Example](image/README/convert-text-to-speech.png)
 
 ## Feedback
 
