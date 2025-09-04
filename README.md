@@ -33,6 +33,10 @@ Blackbird is the new automation backbone for the language technology industry. B
 - **Get batch** Get batch details
 
 
+## Example
+
+![Example 1](/)
+
 ## Feedback
 
 Do you want to use this app or do you have feedback on our implementation? Reach out to us using the [established channels](https://www.blackbird.io/) or create an issue.

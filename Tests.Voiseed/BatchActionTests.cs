@@ -17,10 +17,6 @@ namespace Tests.Voiseed
                AutomaticInference = true,
                 NoOfAlternativeTakes = 0,
                 LanguageId = "FR-FR",
-                IncludeId = true,
-                IncludeCharacter = true,
-                IncludeEmotion = true,
-                IncludeIntensity = true,
                 Ids = new[] { 1, 2, 3 },
                 Characters = new[] { "Narrator", "Hero", "Villain" },
                 Emotions = new[] { "neutral", "happy", "angry" },
@@ -43,7 +39,7 @@ namespace Tests.Voiseed
         public async Task GetBatch_IsSuccess()
         {
             var action = new BatchActions(InvocationContext, FileManager);
-            var result = await action.GetBatch("46dbf12c-3089-4a61-84d6-49744493f9af");
+            var result = await action.GetBatch("e31cec12-de73-4206-b897-301283f7f291 ");
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(result, Newtonsoft.Json.Formatting.Indented);
             Console.WriteLine(json);

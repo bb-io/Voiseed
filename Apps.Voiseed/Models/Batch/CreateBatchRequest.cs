@@ -1,7 +1,6 @@
 ﻿using Apps.Voiseed.DataHandlers.Static;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
-using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Voiseed.Models.Batch
 {
@@ -17,19 +16,7 @@ namespace Apps.Voiseed.Models.Batch
         [Display("Script URL (http/https)")]
         public string? ScriptUrl { get; set; }
 
-        [Display("Include ID column?")]
-        public bool IncludeId { get; set; }
-
-        [Display("Include Character column?")]
-        public bool IncludeCharacter { get; set; }
-
-        [Display("Include Emotion column?")]
-        public bool IncludeEmotion { get; set; }
-
-        [Display("Include Intensity column?")]
-        public bool IncludeIntensity { get; set; }
-
-        [Display("IDs (optional)")]
+        [Display("IDs")]
         public IEnumerable<int>? Ids { get; set; }
 
         [Display("Characters")]
@@ -50,7 +37,7 @@ namespace Apps.Voiseed.Models.Batch
         public string? Name { get; set; }
 
         [Display("Automatic inference")]
-        public bool AutomaticInference { get; set; }
+        public bool AutomaticInference { get; set; } = true;
 
         [Display("Alternative takes")]
         public int? NoOfAlternativeTakes { get; set; }

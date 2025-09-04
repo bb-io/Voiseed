@@ -17,38 +17,72 @@ namespace Apps.Voiseed.Actions
         [Action("Create batch", Description = "Builds an XLSX from selected columns + parallel arrays, uploads it, and creates a batch")]
         public async Task<BatchResponse> CreateBatch([ActionParameter] CreateBatchRequest input)
         {
-            var columns = new List<string> { BatchExcelBuilder.COL_TEXT };
-            if (input.IncludeId) columns.Insert(0, BatchExcelBuilder.COL_ID);
-            if (input.IncludeCharacter) columns.Insert(columns.IndexOf(BatchExcelBuilder.COL_TEXT), BatchExcelBuilder.COL_CHARACTER);
-            if (input.IncludeEmotion) columns.Insert(columns.IndexOf(BatchExcelBuilder.COL_TEXT), BatchExcelBuilder.COL_EMOTION);
-            if (input.IncludeIntensity) columns.Insert(columns.IndexOf(BatchExcelBuilder.COL_TEXT), BatchExcelBuilder.COL_INTENSITY);
+            string? scriptPath = null;
+            if (!string.IsNullOrWhiteSpace(input.ScriptUrl))
+            {
+                if (!IsHttpUrl(input.ScriptUrl))
+                    throw new PluginApplicationException("ScriptUrl must be an http(s) URL.");
+                scriptPath = input.ScriptUrl!.Trim();
+            }
 
-            var xlsx = BatchExcelBuilder.BuildXlsx(
-                columns,
-                input.IncludeId ? input.Ids : null,
-                input.IncludeCharacter ? input.Characters : null,
-                input.IncludeEmotion ? input.Emotions : null,
-                input.IncludeIntensity ? input.Intensities : null,
-                input.Texts,
-                input.LanguageId
-            );
-
-            var fileName = $"script_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
+            FileReference? scriptRef = null;
             const string excelCt = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-            xlsx.Position = 0;
-            FileReference scriptRef = await fileManagementClient.UploadAsync(xlsx, excelCt, fileName);
+            if (string.IsNullOrWhiteSpace(scriptPath))
+            {
+                var texts = input.Texts?.ToList() ?? new();
+                if (texts.Count == 0)
+                    throw new PluginApplicationException("Texts must not be empty.");
 
-            if (string.IsNullOrWhiteSpace(scriptRef.Url))
-                throw new PluginApplicationException("Uploaded script file does not have a public URL. Configure your storage to return FileReference.Url.");
+                bool haveCharacters = input.Characters?.Any() == true;
+                bool haveEmotions = input.Emotions?.Any() == true;
+                bool haveIntensity = input.Intensities?.Any() == true;
+                bool haveIds = input.Ids?.Any() == true;
 
-            var client = new VoiseedClient(invocationContext.AuthenticationCredentialsProviders);
+                if (haveCharacters && input.Characters!.Count() != texts.Count)
+                    throw new PluginApplicationException($"Characters length ({input.Characters!.Count()}) must equal Texts length ({texts.Count}).");
+                if (haveEmotions && input.Emotions!.Count() != texts.Count)
+                    throw new PluginApplicationException($"Emotions length ({input.Emotions!.Count()}) must equal Texts length ({texts.Count}).");
+                if (haveIntensity && input.Intensities!.Count() != texts.Count)
+                    throw new PluginApplicationException($"Intensities length ({input.Intensities!.Count()}) must equal Texts length ({texts.Count}).");
+                if (haveIds && input.Ids!.Count() != texts.Count)
+                    throw new PluginApplicationException($"IDs length ({input.Ids!.Count()}) must equal Texts length ({texts.Count}).");
+
+                var columns = new List<string>
+            {
+                BatchExcelBuilder.COL_ID
+            };
+                if (haveCharacters) columns.Add(BatchExcelBuilder.COL_CHARACTER);
+                if (haveEmotions) columns.Add(BatchExcelBuilder.COL_EMOTION);
+                if (haveIntensity) columns.Add(BatchExcelBuilder.COL_INTENSITY);
+                columns.Add(BatchExcelBuilder.COL_TEXT);
+
+                var xlsx = BatchExcelBuilder.BuildXlsx(
+                    columns,
+                    haveIds ? input.Ids : null,
+                    haveCharacters ? input.Characters : null,
+                    haveEmotions ? input.Emotions : null,
+                    haveIntensity ? input.Intensities : null,
+                    texts,
+                    input.LanguageId
+                );
+
+                var fileName = $"script_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
+                xlsx.Position = 0;
+                scriptRef = await fileManagementClient.UploadAsync(xlsx, excelCt, fileName);
+
+                if (string.IsNullOrWhiteSpace(scriptRef.Url))
+                    throw new PluginApplicationException("Uploaded script file does not have a public URL. Configure your storage to return FileReference.Url.");
+
+                scriptPath = scriptRef.Url!;
+            }
+
             var body = new
             {
                 name = string.IsNullOrWhiteSpace(input.Name)
                     ? $"Batch_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd}"
                     : input.Name,
-                scriptPath = scriptRef.Url,
+                scriptPath = scriptPath,
                 settings = new
                 {
                     automaticInference = input.AutomaticInference,
@@ -57,9 +91,9 @@ namespace Apps.Voiseed.Actions
             };
 
             var req = new RestRequest($"/projects/{input.ProjectId}/batches", Method.Post).AddJsonBody(body);
-            var batch = await client.ExecuteWithErrorHandling<BatchDto>(req);
+            var batch = await Client.ExecuteWithErrorHandling<BatchDto>(req);
 
-            return new BatchResponse { Batch = batch, ScriptFile = scriptRef };
+            return new BatchResponse { Batch = batch, ScriptFile = scriptRef! };
         }
 
         [Action("Get batch", Description = "Get batch details/status by ID")]
@@ -69,5 +103,9 @@ namespace Apps.Voiseed.Actions
             var req = new RestRequest($"/batches/{batchId}", Method.Get);
             return await client.ExecuteWithErrorHandling<BatchDetailsDto>(req);
         }
+
+        private static bool IsHttpUrl(string? url)
+           => Uri.TryCreate(url, UriKind.Absolute, out var u) &&
+              (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps);
     }
 }
