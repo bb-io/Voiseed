@@ -14,14 +14,14 @@ namespace Apps.Voiseed.Actions
     [ActionList("Batch")]
     public class BatchActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
     {
-        [Action("Create batch", Description = "Builds an XLSX from selected columns + parallel arrays, uploads it, and creates a batch")]
+        [Action("Create batch", Description = "Creates a batch")]
         public async Task<BatchResponse> CreateBatch([ActionParameter] CreateBatchRequest input)
         {
             string? scriptPath = null;
             if (!string.IsNullOrWhiteSpace(input.ScriptUrl))
             {
                 if (!IsHttpUrl(input.ScriptUrl))
-                    throw new PluginApplicationException("ScriptUrl must be an http(s) URL.");
+                    throw new PluginApplicationException("Script Url must be an http(s) URL.");
                 scriptPath = input.ScriptUrl!.Trim();
             }
 
@@ -70,9 +70,6 @@ namespace Apps.Voiseed.Actions
                 var fileName = $"script_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
                 xlsx.Position = 0;
                 scriptRef = await fileManagementClient.UploadAsync(xlsx, excelCt, fileName);
-
-                if (string.IsNullOrWhiteSpace(scriptRef.Url))
-                    throw new PluginApplicationException("Uploaded script file does not have a public URL. Configure your storage to return FileReference.Url.");
 
                 scriptPath = scriptRef.Url!;
             }

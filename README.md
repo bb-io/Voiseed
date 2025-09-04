@@ -35,7 +35,7 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 ## Example
 
-![Example 1](/)
+![Example](/)
 
 ## Feedback
 

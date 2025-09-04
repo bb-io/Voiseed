@@ -13,7 +13,7 @@ namespace Tests.Voiseed
             var response = await action.ConvertTextToSpeech(new Apps.Voiseed.Models.Speech.ModelRequest { Model = "xpressive"},new()
             {
                 Text = new[] { "Hello, this is a test." },
-                LanguageId = "en-us",
+                LanguageId = "fr-fr",
                 Voice = "Laura",
                 Styles = new[] { "narration-normal" },
             });
@@ -38,7 +38,7 @@ namespace Tests.Voiseed
         public async Task DownloadConvertTextToSpeechAudio_IsSuccess()
         {
             var action = new SpeechActions(InvocationContext, FileManager);
-            var response = await action.DownloadConvertTextToSpeechAudio(new Apps.Voiseed.Models.Speech.TextToSpeechDownloadInput { RequestId= "46dbf12c-3089-4a61-84d6-49744493f9af" });
+            var response = await action.DownloadConvertTextToSpeechAudio(new Apps.Voiseed.Models.Speech.TextToSpeechDownloadInput { RequestId= "b25a7747-db11-4dd1-adc7-f14dbfd17b53" });
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(response);
             Console.WriteLine(json);

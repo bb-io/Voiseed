@@ -39,7 +39,7 @@ namespace Tests.Voiseed
         public async Task GetBatch_IsSuccess()
         {
             var action = new BatchActions(InvocationContext, FileManager);
-            var result = await action.GetBatch("e31cec12-de73-4206-b897-301283f7f291 ");
+            var result = await action.GetBatch("1cb13d69-f4b7-495a-89fa-dcf0035b4b69");
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(result, Newtonsoft.Json.Formatting.Indented);
             Console.WriteLine(json);

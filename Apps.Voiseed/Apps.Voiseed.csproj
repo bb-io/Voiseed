@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <Product>Voiseed [Beta]</Product>
         <Description>Professional virtual studio for expressive AI voices. Makes it easy for your team to collaborate on voice localization projects</Description>
-        <Version>1.0.0</Version>
+        <Version>1.0.1</Version>
         <AssemblyName>Apps.Voiseed</AssemblyName>
     </PropertyGroup>
 

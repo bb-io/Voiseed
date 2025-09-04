@@ -20,7 +20,7 @@ namespace Apps.Voiseed.Models.Batch
         public IEnumerable<int>? Ids { get; set; }
 
         [Display("Characters")]
-        public IEnumerable<string>? Characters { get; set; }
+        public IEnumerable<string> Characters { get; set; }
 
         [Display("Emotions")]
         [StaticDataSource(typeof(EmotionDataHandler))]
