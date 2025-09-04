@@ -2,7 +2,6 @@ using Apps.Voiseed.Constants;
 using Apps.Voiseed.Models;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Exceptions;
-using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
 using Newtonsoft.Json;
 using RestSharp;
@@ -17,7 +16,7 @@ public class VoiseedClient : BlackBirdRestClient
         MaxTimeout = 300000
     })
     {
-        var token = GetToken(creds.First(x=>x.KeyName == CredsNames.ClientId).Value, 
+        var token = GetToken(creds.First(x => x.KeyName == CredsNames.ClientId).Value,
             creds.First(x => x.KeyName == CredsNames.ClientSecret).Value).GetAwaiter().GetResult();
         this.AddDefaultHeader("Authorization", token);
     }
@@ -53,12 +52,12 @@ public class VoiseedClient : BlackBirdRestClient
     private async Task<string> GetToken(string clientId, string clientSecret)
     {
         var request = new RestRequest("/auth/token", Method.Post);
-        request.AddBody(new { clientId= clientId, clientSecret= clientSecret });
+        request.AddBody(new { clientId = clientId, clientSecret = clientSecret });
 
 
         var response = await ExecuteWithErrorHandling<TokenDto>(request);
 
         return response.AccessToken;
-    } 
+    }
 
 }

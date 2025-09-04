@@ -11,7 +11,7 @@ using RestSharp;
 
 namespace Apps.Voiseed.Actions
 {
-    [ActionList]
+    [ActionList("Batch")]
     public class BatchActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
     {
         [Action("Create batch", Description = "Builds an XLSX from selected columns + parallel arrays, uploads it, and creates a batch")]

@@ -35,7 +35,7 @@ public class ProjectActions(InvocationContext invocationContext) : Invocable(inv
     }
 
 
-    [Action("Create project", Description = "Create project")]
+    [Action("Create project", Description = "Creates project")]
     public async Task<ProjectDto> CreateProject([ActionParameter] CreateAudioProductionProjectRequest input)
     {
         var client = new VoiseedClient(invocationContext.AuthenticationCredentialsProviders);
