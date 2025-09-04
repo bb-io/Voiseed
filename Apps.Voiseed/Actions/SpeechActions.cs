@@ -14,8 +14,8 @@ namespace Apps.Voiseed.Actions
     public class SpeechActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
     {
         [Action("Convert text to speech", Description = "Convert provided text to a speech with selected settings")]
-        public async Task<TextToSpeechResponse> ConvertTextToSpeech([ActionParameter] TextToSpeechRequest input,
-            [ActionParameter] ModelRequest model)
+        public async Task<TextToSpeechResponse> ConvertTextToSpeech(
+            [ActionParameter] ModelRequest model,[ActionParameter] TextToSpeechRequest input)
         {
             var styles = (input.Styles ?? Array.Empty<string>()).ToArray();
             if (styles.Length == 0) styles = new[] { "neutral" };
@@ -102,7 +102,7 @@ namespace Apps.Voiseed.Actions
 
 
 
-        private static (string name, string contentType) NormalizeAsWav(string? originalName, string? originalCt, int index)
+        public  (string name, string contentType) NormalizeAsWav(string? originalName, string? originalCt, int index)
         {
             string name = string.IsNullOrWhiteSpace(originalName)
                 ? $"voiseed_line_{index:000}.wav"
@@ -128,7 +128,7 @@ namespace Apps.Voiseed.Actions
             return (name, string.IsNullOrWhiteSpace(ct) ? "application/octet-stream" : ct);
         }
 
-        private static string? MapContentTypeByExt(string ext)
+        public  string? MapContentTypeByExt(string ext)
         {
             switch (ext.ToLowerInvariant())
             {

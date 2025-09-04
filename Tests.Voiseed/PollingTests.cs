@@ -29,5 +29,28 @@ namespace Tests.Voiseed
             Assert.IsNotNull(response);
             Assert.AreEqual("SUCCESS", response.Memory.LastStatus);
         }
+
+        [TestMethod]
+        public async Task OnBatchCompleted_ShouldReturnSuccess()
+        {
+
+            var pollingList = new Apps.Voiseed.Polling.PollingList(InvocationContext);
+            var memory = new DateMemory
+            {
+                //LastInteractionDate = DateTime.UtcNow.AddMinutes(-10),
+                //LastStatus = "PENDING"
+            };
+            var request = new Blackbird.Applications.Sdk.Common.Polling.PollingEventRequest<DateMemory>
+            {
+                Memory = memory
+            };
+            string batchId = "46dbf12c-3089-4a61-84d6-49744493f9af";
+            var response = await pollingList.OnBatchCompleted(request, batchId);
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(response);
+            Console.WriteLine(json);
+
+            Assert.IsNotNull(response);
+            Assert.AreEqual("COMPLETED", response.Memory.LastStatus);
+        }
     }
 }
