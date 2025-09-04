@@ -1,6 +1,7 @@
 {
   "ConnectionDefinition": {
-    "token": ""
+    "clientId": "",
+    "clientSecret": ""
   },
   "TestFolder": "TestFiles"
 }
