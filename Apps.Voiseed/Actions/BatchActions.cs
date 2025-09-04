@@ -37,7 +37,7 @@ namespace Apps.Voiseed.Actions
             const string excelCt = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
             xlsx.Position = 0;
-            FileReference scriptRef = await fileManagementClient.UploadAsync(xlsx, fileName, excelCt);
+            FileReference scriptRef = await fileManagementClient.UploadAsync(xlsx, excelCt, fileName);
 
             if (string.IsNullOrWhiteSpace(scriptRef.Url))
                 throw new PluginApplicationException("Uploaded script file does not have a public URL. Configure your storage to return FileReference.Url.");
