@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <Product>Voiseed [Beta]</Product>
+        <Description>Professional virtual studio for expressive AI voices. Makes it easy for your team to collaborate on voice localization projects</Description>
+        <Version>1.0.1</Version>
+        <AssemblyName>Apps.Voiseed</AssemblyName>
+    </PropertyGroup>
+
+	<ItemGroup>
+		<EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
+	</ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="2.13.0" />
+        <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.25" />
+        <PackageReference Include="ClosedXML" Version="0.105.0" />
+    </ItemGroup>
+
+</Project>
