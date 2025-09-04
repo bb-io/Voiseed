@@ -36,11 +36,11 @@ namespace Apps.Voiseed.Models.Batch
         public IEnumerable<string>? Characters { get; set; }
 
         [Display("Emotions")]
-        [DataSource(typeof(EmotionDataHandler))]
+        [StaticDataSource(typeof(EmotionDataHandler))]
         public IEnumerable<string>? Emotions { get; set; }
 
         [Display("Intensity")]
-        [DataSource(typeof(IntensityDataHandler))]
+        [StaticDataSource(typeof(IntensityDataHandler))]
         public IEnumerable<string>? Intensities { get; set; }
 
         [Display("Texts")]
