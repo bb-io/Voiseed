@@ -7,11 +7,11 @@ using RestSharp;
 
 namespace Apps.Voiseed.DataHandlers
 {
-    public class VoiceStylesDataHandler(InvocationContext invocationContext, [ActionParameter] ModelRequest model) : Invocable(invocationContext), IAsyncDataSourceItemHandler
+    public class VoiceStylesDataHandler(InvocationContext invocationContext) : Invocable(invocationContext), IAsyncDataSourceItemHandler
     {
         public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
-            var request = new RestRequest($"/models/{model.Model}/styles", Method.Get);
+            var request = new RestRequest($"/models/xpressive/styles", Method.Get);
             var voices = await Client.ExecuteWithErrorHandling<List<VoiceStyleDto>>(request);
 
             return voices.Select(voice => new DataSourceItem(voice.Style, voice.Style));

@@ -10,7 +10,7 @@ namespace Tests.Voiseed
         public async Task ConvertTextToSpeech_IsSuccess()
         {
             var action = new SpeechActions(InvocationContext, FileManager);
-            var response = await action.ConvertTextToSpeech(new Apps.Voiseed.Models.Speech.ModelRequest { Model = "xpressive"},new()
+            var response = await action.ConvertTextToSpeech(new()
             {
                 Text = new[] { "Hello, this is a test." },
                 LanguageId = "fr-fr",
