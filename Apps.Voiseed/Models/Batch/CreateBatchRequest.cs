@@ -1,6 +1,7 @@
 ﻿using Apps.Voiseed.DataHandlers.Static;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.Voiseed.Models.Batch
 {
@@ -11,16 +12,16 @@ namespace Apps.Voiseed.Models.Batch
 
         [Display("Language")]
         [StaticDataSource(typeof(BatchLanguagesDataHandler))]
-        public string LanguageId { get; set; }
+        public string? LanguageId { get; set; }
 
-        [Display("Script URL (http/https)")]
-        public string? ScriptUrl { get; set; }
+        [Display("Script file")]
+        public FileReference? FileScript { get; set; }
 
         [Display("IDs")]
         public IEnumerable<int>? Ids { get; set; }
 
         [Display("Characters")]
-        public IEnumerable<string> Characters { get; set; }
+        public IEnumerable<string>? Characters { get; set; }
 
         [Display("Emotions")]
         [StaticDataSource(typeof(EmotionDataHandler))]
@@ -31,13 +32,13 @@ namespace Apps.Voiseed.Models.Batch
         public IEnumerable<string>? Intensities { get; set; }
 
         [Display("Texts")]
-        public IEnumerable<string> Texts { get; set; }
+        public IEnumerable<string>? Texts { get; set; }
 
         [Display("Batch name")]
         public string? Name { get; set; }
 
         [Display("Automatic inference")]
-        public bool AutomaticInference { get; set; } = true;
+        public bool? AutomaticInference { get; set; } = true;
 
         [Display("Alternative takes")]
         public int? NoOfAlternativeTakes { get; set; }

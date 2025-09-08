@@ -17,9 +17,7 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 ### Speech
 
-- **Convert text to speech** Convert provided text to a speech with selected settings
-- **Get convert text to speech status** Get convert text to speech status
-- **Download converted text to speech audio** Download converted text to speech audio files
+- **Convert text to speech** Convert provided text to a speech with selected settings (In order to keep working correctly, cinsider the input limit 2-3 sentences, if bigger input used it may return corrupted URL)
 
 ### Project
 
@@ -27,15 +25,12 @@ Blackbird is the new automation backbone for the language technology industry. B
 - **Get project** Get project details
 - **Search projects** Searches projects
 
-### Batch
+### Batch (Platform-created)
 
 - **Create batch** Create a new batch
 - **Get batch** Get batch details
 
-
-## Example
-
-![Example](/)
+**Attention**: Batch actions are considered platform-created, so the process does not return a Request ID because downloads via API are not supported.
 
 ## Feedback
 

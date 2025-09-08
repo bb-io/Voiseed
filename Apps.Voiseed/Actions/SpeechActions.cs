@@ -2,6 +2,7 @@
 using Apps.Voiseed.Models.Speech;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Utilities;
@@ -13,18 +14,30 @@ namespace Apps.Voiseed.Actions
     [ActionList("Speech")]
     public class SpeechActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
     {
+
         [Action("Convert text to speech", Description = "Convert provided text to a speech with selected settings")]
-        public async Task<TextToSpeechResponse> ConvertTextToSpeech(
-            [ActionParameter] ModelRequest model, [ActionParameter] TextToSpeechRequest input)
+        public async Task<FileResponse> ConvertWaitAndDownload(
+            [ActionParameter] TextToSpeechRequest input)
         {
-            var styles = (input.Styles ?? Array.Empty<string>()).ToArray();
-            if (styles.Length == 0) styles = new[] { "neutral" };
+            var client = new VoiseedClient(invocationContext.AuthenticationCredentialsProviders);
+
+            var text = (input.Text ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(text))
+                throw new PluginApplicationException("Text must contain a non-empty string.");
+
+            var finalStyle = string.IsNullOrWhiteSpace(input.Style)
+                ? "narration-normal"
+                : input.Style.Trim();
+            if (string.IsNullOrWhiteSpace(input.Voice))
+                throw new PluginMisconfigurationException("Voice is required.");
+
+            const string ModelName = "xpressive";
 
             var body = new Dictionary<string, object>
             {
-                ["texts"] = input.Text,
-                ["styles"] = styles,
-                ["model"] = model.Model,
+                ["texts"] = new[] { text },
+                ["styles"] = new[] { finalStyle },
+                ["model"] = ModelName,
                 ["languageId"] = input.LanguageId,
                 ["voice"] = input.Voice
             };
@@ -42,64 +55,63 @@ namespace Apps.Voiseed.Actions
             if (input.OutputSamplingRate.HasValue) aq["outputSamplingRate"] = input.OutputSamplingRate;
             if (aq.Count > 0) adv["audioQuality"] = aq;
 
-            if (adv.Count > 0) body["advancedSettings"] = adv;
+            if (adv.Count > 0)
+                body["advancedSettings"] = adv;
 
             var payload = Newtonsoft.Json.JsonConvert.SerializeObject(
                 body,
                 new Newtonsoft.Json.JsonSerializerSettings { NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore }
             );
 
-            var req = new RestRequest("/inference", Method.Post).AddStringBody(payload, DataFormat.Json);
-            return await Client.ExecuteWithErrorHandling<TextToSpeechResponse>(req);
-        }
+            var createReq = new RestRequest("/inference", Method.Post).AddStringBody(payload, DataFormat.Json);
+            var created = await client.ExecuteWithErrorHandling<Apps.Voiseed.Models.Speech.TextToSpeechResponse>(createReq);
+            var requestId = created?.RequestId ?? throw new PluginApplicationException("Inference created but no 'requestId' in response.");
 
-        [Action("Get convert text to speech status", Description = "Get convert text to speech status")]
-        public async Task<TextToSpeechStatusResponse> GetConvertTextToSpeechStatus([ActionParameter][Display("Request ID")] string requestId)
-        {
-            var client = new VoiseedClient(invocationContext.AuthenticationCredentialsProviders);
-            var req = new RestRequest($"/inference/{requestId}/status", Method.Get);
-            return await client.ExecuteWithErrorHandling<TextToSpeechStatusResponse>(req);
-        }
-
-
-        [Action("Download converted text to speech audio", Description = "Download converted text to speech audio files")]
-        public async Task<FileResponse> DownloadConvertTextToSpeechAudio([ActionParameter] TextToSpeechDownloadInput input)
-        {
-            var client = new VoiseedClient(invocationContext.AuthenticationCredentialsProviders);
-
-            var allUrls = new List<string>();
-            var page = 1;
+            var delay = TimeSpan.FromMilliseconds(800);
             while (true)
             {
-                var req = new RestRequest($"/inference/{input.RequestId}/download", Method.Get)
+                var stReq = new RestRequest($"/inference/{requestId}/status", Method.Get);
+                var st = await client.ExecuteWithErrorHandling<Apps.Voiseed.Models.Speech.TextToSpeechStatusResponse>(stReq);
+
+                var raw = st?.Status ?? string.Empty;
+                var status = raw.Trim().ToLowerInvariant();
+
+                if (status == "success") break;
+                if (status == "failure" || status == "failed" || status == "error")
+                    throw new PluginApplicationException($"Inference '{requestId}' finished with error status '{raw}'.");
+
+                await Task.Delay(delay);
+                var nextMs = Math.Min(delay.TotalMilliseconds * 1.8 + Random.Shared.Next(0, 250), 5000);
+                delay = TimeSpan.FromMilliseconds(nextMs);
+            }
+
+            string? firstUrl = null;
+            var page = 1;
+            while (firstUrl == null)
+            {
+                var dlReq = new RestRequest($"/inference/{requestId}/download", Method.Get)
                     .AddParameter("page", page, ParameterType.QueryString);
 
-                var pageData = await client.ExecuteWithErrorHandling<TextToSpeechUrls>(req);
-                var urls = pageData?.Urls ?? new List<string>();
-                if (urls.Count == 0) break;
+                var pageObj = await client.ExecuteWithErrorHandling<Newtonsoft.Json.Linq.JObject>(dlReq);
+                var urls = pageObj.SelectToken("urls")?.ToObject<List<string>>() ?? new List<string>();
 
-                allUrls.AddRange(urls);
-                page++;
+                if (urls.Count > 0)
+                    firstUrl = urls[0];
+                else if (page > 3)
+                    break;
+                else
+                    page++;
             }
 
-            if (allUrls.Count == 0)
-                return new FileResponse { Files = Array.Empty<FileReference>() };
+            if (string.IsNullOrWhiteSpace(firstUrl))
+                throw new PluginApplicationException("No audio URL was returned for the inference.");
 
-            var fileRefs = new List<FileReference>();
-            for (int i = 0; i < allUrls.Count; i++)
-            {
-                var url = allUrls[i];
-                var blk = await FileDownloader.DownloadFileBytes(url);
+            var blob = await FileDownloader.DownloadFileBytes(firstUrl);
+            var (finalName, finalContentType) = NormalizeAsWav(blob.Name, blob.ContentType, 0);
+            var fr = await fileManagementClient.UploadAsync(blob.FileStream, finalContentType, finalName);
 
-                var (finalName, finalContentType) = NormalizeAsWav(blk.Name, blk.ContentType, i);
-
-                var fr = await fileManagementClient.UploadAsync(blk.FileStream, finalContentType, finalName);
-                fileRefs.Add(fr);
-            }
-
-            return new FileResponse { Files = fileRefs };
+            return new FileResponse { File = fr };
         }
-
 
 
         public (string name, string contentType) NormalizeAsWav(string? originalName, string? originalCt, int index)

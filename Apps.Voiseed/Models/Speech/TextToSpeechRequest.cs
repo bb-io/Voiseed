@@ -7,7 +7,7 @@ namespace Apps.Voiseed.Models.Speech
 {
     public class TextToSpeechRequest
     {
-        public IEnumerable<string> Text { get; set; }
+        public string Text { get; set; }
 
         [Display("Language")]
         [DataSource(typeof(LanguagesDataHandler))]
@@ -17,9 +17,9 @@ namespace Apps.Voiseed.Models.Speech
         [DataSource(typeof(VoicesDataHandler))]
         public string Voice { get; set; }
 
-        [Display("Styles")]
+        [Display("Style")]
         [DataSource(typeof(VoiceStylesDataHandler))]
-        public IEnumerable<string> Styles { get; set; }
+        public string? Style { get; set; }
 
         [Display("Glossary IDs")]
         [DataSource(typeof(GlossariesDataHandler))]

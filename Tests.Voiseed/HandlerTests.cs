@@ -67,7 +67,7 @@ public class HandlerTests : TestBase
     [TestMethod]
     public async Task VoiceStylesDataHandler_IsSuccess()
     {
-        var handler = new VoiceStylesDataHandler(InvocationContext, new Apps.Voiseed.Models.Speech.ModelRequest { Model = "xpressive" });
+        var handler = new VoiceStylesDataHandler(InvocationContext);
         var response = await handler.GetDataAsync(new DataSourceContext(), CancellationToken.None);
 
         foreach (var item in response)

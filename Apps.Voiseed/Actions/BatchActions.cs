@@ -18,18 +18,38 @@ namespace Apps.Voiseed.Actions
         public async Task<BatchResponse> CreateBatch([ActionParameter] CreateBatchRequest input)
         {
             string? scriptPath = null;
-            if (!string.IsNullOrWhiteSpace(input.ScriptUrl))
-            {
-                if (!IsHttpUrl(input.ScriptUrl))
-                    throw new PluginApplicationException("Script Url must be an http(s) URL.");
-                scriptPath = input.ScriptUrl!.Trim();
-            }
-
             FileReference? scriptRef = null;
-            const string excelCt = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+            if (input.FileScript != null)
+            {
+                if (!string.IsNullOrWhiteSpace(input.FileScript.Url))
+                {
+                    scriptRef = input.FileScript;
+                    scriptPath = input.FileScript.Url!.Trim();
+                }
+                else
+                {
+                    using var stream = await fileManagementClient.DownloadAsync(input.FileScript);
+                    stream.Position = 0;
+
+                    var ct = string.IsNullOrWhiteSpace(input.FileScript.ContentType)
+                        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        : input.FileScript.ContentType!;
+
+                    var name = string.IsNullOrWhiteSpace(input.FileScript.Name)
+                        ? $"script_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx"
+                        : input.FileScript.Name!;
+
+                    var reuploaded = await fileManagementClient.UploadAsync(stream, ct, name);
+                    scriptRef = reuploaded;
+                    scriptPath = reuploaded.Url ?? throw new PluginApplicationException("Unable to obtain URL for the provided script file.");
+                }
+            }
 
             if (string.IsNullOrWhiteSpace(scriptPath))
             {
+                const string excelCt = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
                 var texts = input.Texts?.ToList() ?? new();
                 if (texts.Count == 0)
                     throw new PluginApplicationException("Texts must not be empty.");
@@ -48,10 +68,7 @@ namespace Apps.Voiseed.Actions
                 if (haveIds && input.Ids!.Count() != texts.Count)
                     throw new PluginApplicationException($"IDs length ({input.Ids!.Count()}) must equal Texts length ({texts.Count}).");
 
-                var columns = new List<string>
-            {
-                BatchExcelBuilder.COL_ID
-            };
+                var columns = new List<string> { BatchExcelBuilder.COL_ID };
                 if (haveCharacters) columns.Add(BatchExcelBuilder.COL_CHARACTER);
                 if (haveEmotions) columns.Add(BatchExcelBuilder.COL_EMOTION);
                 if (haveIntensity) columns.Add(BatchExcelBuilder.COL_INTENSITY);
@@ -69,25 +86,45 @@ namespace Apps.Voiseed.Actions
 
                 var fileName = $"script_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
                 xlsx.Position = 0;
-                scriptRef = await fileManagementClient.UploadAsync(xlsx, excelCt, fileName);
 
+                scriptRef = await fileManagementClient.UploadAsync(xlsx, excelCt, fileName);
                 scriptPath = scriptRef.Url!;
             }
 
-            var body = new
+            if (string.IsNullOrWhiteSpace(scriptPath))
+                throw new PluginApplicationException("scriptPath is empty.");
+
+            var nameValue = string.IsNullOrWhiteSpace(input.Name)
+                ? $"Batch_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd}"
+                : input.Name;
+
+            var settings = new Newtonsoft.Json.Linq.JObject();
+
+            settings["automaticInference"] = input.AutomaticInference ?? true;
+                                                          
+            if (input.NoOfAlternativeTakes.HasValue)
             {
-                name = string.IsNullOrWhiteSpace(input.Name)
-                    ? $"Batch_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd}"
-                    : input.Name,
-                scriptPath = scriptPath,
-                settings = new
-                {
-                    automaticInference = input.AutomaticInference,
-                    noOfAlternativeTakes = input.NoOfAlternativeTakes ?? 0
-                }
+                var n = Math.Max(0, Math.Min(2, input.NoOfAlternativeTakes.Value));
+                settings["noOfAlternativeTakes"] = n;
+            }
+
+            var body = new Newtonsoft.Json.Linq.JObject
+            {
+                ["name"] = nameValue,
+                ["scriptPath"] = scriptPath
             };
 
-            var req = new RestRequest($"/projects/{input.ProjectId}/batches", Method.Post).AddJsonBody(body);
+            if (settings.HasValues)
+                body["settings"] = settings;
+
+            var payload = Newtonsoft.Json.JsonConvert.SerializeObject(
+                body,
+                new Newtonsoft.Json.JsonSerializerSettings { NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore }
+            );
+
+            var req = new RestRequest($"/projects/{input.ProjectId}/batches", Method.Post)
+                .AddStringBody(payload, DataFormat.Json);
+
             var batch = await Client.ExecuteWithErrorHandling<BatchDto>(req);
 
             return new BatchResponse { Batch = batch, ScriptFile = scriptRef! };

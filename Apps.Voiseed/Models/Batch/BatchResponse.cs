@@ -6,6 +6,7 @@ namespace Apps.Voiseed.Models.Batch
 {
     public class BatchResponse
     {
+        public string? BulkRequestId { get; set; }
         public BatchDto Batch { get; set; } = new();
         public FileReference ScriptFile { get; set; }
     }
