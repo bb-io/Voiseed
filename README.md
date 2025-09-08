@@ -17,7 +17,7 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 ### Speech
 
-- **Convert text to speech** Convert provided text to a speech with selected settings (In order to keep working correctly, cinsider the input limit 2-3 sentences)
+- **Convert text to speech** Convert provided text to a speech with selected settings (In order to keep working correctly, cinsider the input limit 2-3 sentences, if bigger input used it may return corrupted URL)
 
 ### Project
 

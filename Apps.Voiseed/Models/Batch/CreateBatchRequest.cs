@@ -38,7 +38,7 @@ namespace Apps.Voiseed.Models.Batch
         public string? Name { get; set; }
 
         [Display("Automatic inference")]
-        public bool AutomaticInference { get; set; } = true;
+        public bool? AutomaticInference { get; set; } = true;
 
         [Display("Alternative takes")]
         public int? NoOfAlternativeTakes { get; set; }
