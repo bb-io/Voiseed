@@ -91,20 +91,40 @@ namespace Apps.Voiseed.Actions
                 scriptPath = scriptRef.Url!;
             }
 
-            var body = new
+            if (string.IsNullOrWhiteSpace(scriptPath))
+                throw new PluginApplicationException("scriptPath is empty.");
+
+            var nameValue = string.IsNullOrWhiteSpace(input.Name)
+                ? $"Batch_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd}"
+                : input.Name;
+
+            var settings = new Newtonsoft.Json.Linq.JObject();
+
+            settings["automaticInference"] = input.AutomaticInference;
+                                                          
+            if (input.NoOfAlternativeTakes.HasValue)
             {
-                name = string.IsNullOrWhiteSpace(input.Name)
-                    ? $"Batch_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd}"
-                    : input.Name,
-                scriptPath,
-                settings = new
-                {
-                    automaticInference = input.AutomaticInference,
-                    noOfAlternativeTakes = input.NoOfAlternativeTakes ?? 0
-                }
+                var n = Math.Max(0, Math.Min(2, input.NoOfAlternativeTakes.Value));
+                settings["noOfAlternativeTakes"] = n;
+            }
+
+            var body = new Newtonsoft.Json.Linq.JObject
+            {
+                ["name"] = nameValue,
+                ["scriptPath"] = scriptPath
             };
 
-            var req = new RestRequest($"/projects/{input.ProjectId}/batches", Method.Post).AddJsonBody(body);
+            if (settings.HasValues)
+                body["settings"] = settings;
+
+            var payload = Newtonsoft.Json.JsonConvert.SerializeObject(
+                body,
+                new Newtonsoft.Json.JsonSerializerSettings { NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore }
+            );
+
+            var req = new RestRequest($"/projects/{input.ProjectId}/batches", Method.Post)
+                .AddStringBody(payload, DataFormat.Json);
+
             var batch = await Client.ExecuteWithErrorHandling<BatchDto>(req);
 
             return new BatchResponse { Batch = batch, ScriptFile = scriptRef! };
