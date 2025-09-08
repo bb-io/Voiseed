@@ -19,7 +19,7 @@ namespace Apps.Voiseed.Models.Speech
 
         [Display("Style")]
         [DataSource(typeof(VoiceStylesDataHandler))]
-        public string Style { get; set; }
+        public string? Style { get; set; }
 
         [Display("Glossary IDs")]
         [DataSource(typeof(GlossariesDataHandler))]
