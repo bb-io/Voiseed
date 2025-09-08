@@ -19,7 +19,7 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 - **Convert text to speech** Convert provided text to a speech with selected settings
 - **Get convert text to speech status** Get convert text to speech status
-- **Download converted text to speech audio** Download converted text to speech audio files
+- **Download TTS audio** Download converted text to speech audio files
 
 ### Project
 

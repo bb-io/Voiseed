@@ -18,15 +18,31 @@ namespace Apps.Voiseed.Actions
         public async Task<BatchResponse> CreateBatch([ActionParameter] CreateBatchRequest input)
         {
             string? scriptPath = null;
-            if (!string.IsNullOrWhiteSpace(input.ScriptUrl))
-            {
-                if (!IsHttpUrl(input.ScriptUrl))
-                    throw new PluginApplicationException("Script Url must be an http(s) URL.");
-                scriptPath = input.ScriptUrl!.Trim();
-            }
-
             FileReference? scriptRef = null;
             const string excelCt = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+            if (input.FileScript != null)
+            {
+                if (!string.IsNullOrWhiteSpace(input.FileScript.Url))
+                {
+                    scriptRef = input.FileScript;
+                    scriptPath = input.FileScript.Url!.Trim();
+                }
+                else
+                {
+                    using var stream = await fileManagementClient.DownloadAsync(input.FileScript);
+                    stream.Position = 0;
+
+                    var ct = string.IsNullOrWhiteSpace(input.FileScript.ContentType) ? excelCt : input.FileScript.ContentType!;
+                    var name = string.IsNullOrWhiteSpace(input.FileScript.Name)
+                        ? $"script_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx"
+                        : input.FileScript.Name!;
+
+                    var reuploaded = await fileManagementClient.UploadAsync(stream, ct, name);
+                    scriptRef = reuploaded;
+                    scriptPath = reuploaded.Url ?? throw new PluginApplicationException("Unable to obtain URL for the provided script file.");
+                }
+            }
 
             if (string.IsNullOrWhiteSpace(scriptPath))
             {
@@ -48,10 +64,9 @@ namespace Apps.Voiseed.Actions
                 if (haveIds && input.Ids!.Count() != texts.Count)
                     throw new PluginApplicationException($"IDs length ({input.Ids!.Count()}) must equal Texts length ({texts.Count}).");
 
-                var columns = new List<string>
-            {
-                BatchExcelBuilder.COL_ID
-            };
+                var ids = haveIds ? input.Ids! : Enumerable.Range(1, texts.Count);
+
+                var columns = new List<string> { BatchExcelBuilder.COL_ID };
                 if (haveCharacters) columns.Add(BatchExcelBuilder.COL_CHARACTER);
                 if (haveEmotions) columns.Add(BatchExcelBuilder.COL_EMOTION);
                 if (haveIntensity) columns.Add(BatchExcelBuilder.COL_INTENSITY);
@@ -59,7 +74,7 @@ namespace Apps.Voiseed.Actions
 
                 var xlsx = BatchExcelBuilder.BuildXlsx(
                     columns,
-                    haveIds ? input.Ids : null,
+                    ids,
                     haveCharacters ? input.Characters : null,
                     haveEmotions ? input.Emotions : null,
                     haveIntensity ? input.Intensities : null,
@@ -70,27 +85,65 @@ namespace Apps.Voiseed.Actions
                 var fileName = $"script_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
                 xlsx.Position = 0;
                 scriptRef = await fileManagementClient.UploadAsync(xlsx, excelCt, fileName);
-
                 scriptPath = scriptRef.Url!;
             }
 
-            var body = new
+            var commonName = string.IsNullOrWhiteSpace(input.Name)
+                ? $"Batch_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd}"
+                : input.Name;
+
+            var settings = new
             {
-                name = string.IsNullOrWhiteSpace(input.Name)
-                    ? $"Batch_{input.LanguageId}_{DateTime.UtcNow:yyyyMMdd}"
-                    : input.Name,
-                scriptPath = scriptPath,
-                settings = new
-                {
-                    automaticInference = input.AutomaticInference,
-                    noOfAlternativeTakes = input.NoOfAlternativeTakes ?? 0
-                }
+                automaticInference = input.AutomaticInference,
+                noOfAlternativeTakes = input.NoOfAlternativeTakes ?? 0
             };
 
-            var req = new RestRequest($"/projects/{input.ProjectId}/batches", Method.Post).AddJsonBody(body);
-            var batch = await Client.ExecuteWithErrorHandling<BatchDto>(req);
+            var bulkBody = new
+            {
+                batches = new[]
+                {
+            new {
+                projectId = input.ProjectId,
+                name = commonName,
+                scriptPath = scriptPath,
+                settings = settings
+            }
+        }
+            };
 
-            return new BatchResponse { Batch = batch, ScriptFile = scriptRef! };
+            try
+            {
+                var bulkReq = new RestRequest("/batches/bulk", Method.Post).AddJsonBody(bulkBody);
+                var j = await Client.ExecuteWithErrorHandling<Newtonsoft.Json.Linq.JObject>(bulkReq);
+
+                var bulkRequestId =
+                    (string?)j.SelectToken("batchRequestId") ??
+                    (string?)j.SelectToken("id") ??
+                    (string?)j.SelectToken("requestId");
+
+                if (string.IsNullOrWhiteSpace(bulkRequestId))
+                    throw new PluginApplicationException("Bulk create succeeded but no 'batchRequestId' was found in response.");
+
+                return new BatchResponse
+                {
+                    Batch = null,
+                    ScriptFile = scriptRef,
+                    BulkRequestId = bulkRequestId
+                };
+            }
+            catch (PluginApplicationException ex)
+            {
+                var msg = ex.Message ?? string.Empty;
+                if (msg.Contains("Authorization header requires 'Credential'", StringComparison.OrdinalIgnoreCase) ||
+                    msg.Contains("SignedHeaders", StringComparison.OrdinalIgnoreCase) ||
+                    msg.Contains("Signature", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new PluginMisconfigurationException(
+                        "Bulk endpoint requires AWS Signature Version 4 (service: execute-api, правильний region). " +
+                        "Налаштуйте SigV4 облікові дані для Voiseed/Revoiceit.");
+                }
+                throw;
+            }
         }
 
         [Action("Get batch", Description = "Get batch details/status by ID")]
@@ -100,9 +153,5 @@ namespace Apps.Voiseed.Actions
             var req = new RestRequest($"/batches/{batchId}", Method.Get);
             return await client.ExecuteWithErrorHandling<BatchDetailsDto>(req);
         }
-
-        private static bool IsHttpUrl(string? url)
-           => Uri.TryCreate(url, UriKind.Absolute, out var u) &&
-              (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Apps.Voiseed.DataHandlers.Static;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.Voiseed.Models.Batch
 {
@@ -13,8 +14,8 @@ namespace Apps.Voiseed.Models.Batch
         [StaticDataSource(typeof(BatchLanguagesDataHandler))]
         public string LanguageId { get; set; }
 
-        [Display("Script URL (http/https)")]
-        public string? ScriptUrl { get; set; }
+        [Display("Script file")]
+        public FileReference? FileScript { get; set; }
 
         [Display("IDs")]
         public IEnumerable<int>? Ids { get; set; }

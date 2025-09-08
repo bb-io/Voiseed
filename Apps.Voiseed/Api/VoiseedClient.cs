@@ -12,7 +12,7 @@ public class VoiseedClient : BlackBirdRestClient
 {
     public VoiseedClient(IEnumerable<AuthenticationCredentialsProvider> creds) : base(new()
     {
-        BaseUrl = new Uri("https://api.revoiceit.com/"),
+        BaseUrl = new Uri("https://api.revoiceit.com"),
         MaxTimeout = 300000
     })
     {
