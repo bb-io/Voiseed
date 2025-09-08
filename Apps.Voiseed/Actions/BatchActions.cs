@@ -100,7 +100,7 @@ namespace Apps.Voiseed.Actions
 
             var settings = new Newtonsoft.Json.Linq.JObject();
 
-            settings["automaticInference"] = input.AutomaticInference;
+            settings["automaticInference"] = input.AutomaticInference ?? true;
                                                           
             if (input.NoOfAlternativeTakes.HasValue)
             {
