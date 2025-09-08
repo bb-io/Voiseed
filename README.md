@@ -25,15 +25,12 @@ Blackbird is the new automation backbone for the language technology industry. B
 - **Get project** Get project details
 - **Search projects** Searches projects
 
-### Batch
+### Batch (Platform-created)
 
 - **Create batch** Create a new batch
 - **Get batch** Get batch details
 
-
-## Example
-
-![Example](image/README/convert-text-to-speech.png)
+**Attention**: Batch actions are considered platform-created, so the process does not return a Request ID because downloads via API are not supported.
 
 ## Feedback
 

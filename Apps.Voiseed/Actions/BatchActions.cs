@@ -100,15 +100,15 @@ namespace Apps.Voiseed.Actions
 
             var bulkBody = new
             {
-                batches = new[]
-                {
-            new {
-                projectId = input.ProjectId,
-                name = commonName,
-                scriptPath = scriptPath,
-                settings = settings
-            }
-        }
+                    batches = new[]
+                    {
+                    new {
+                        projectId = input.ProjectId,
+                        name = commonName,
+                        scriptPath = scriptPath,
+                        settings = settings
+                    }
+                    }
             };
 
             try
