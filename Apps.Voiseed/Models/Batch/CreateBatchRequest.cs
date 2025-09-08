@@ -12,7 +12,7 @@ namespace Apps.Voiseed.Models.Batch
 
         [Display("Language")]
         [StaticDataSource(typeof(BatchLanguagesDataHandler))]
-        public string LanguageId { get; set; }
+        public string? LanguageId { get; set; }
 
         [Display("Script file")]
         public FileReference? FileScript { get; set; }
@@ -21,7 +21,7 @@ namespace Apps.Voiseed.Models.Batch
         public IEnumerable<int>? Ids { get; set; }
 
         [Display("Characters")]
-        public IEnumerable<string> Characters { get; set; }
+        public IEnumerable<string>? Characters { get; set; }
 
         [Display("Emotions")]
         [StaticDataSource(typeof(EmotionDataHandler))]
@@ -32,7 +32,7 @@ namespace Apps.Voiseed.Models.Batch
         public IEnumerable<string>? Intensities { get; set; }
 
         [Display("Texts")]
-        public IEnumerable<string> Texts { get; set; }
+        public IEnumerable<string>? Texts { get; set; }
 
         [Display("Batch name")]
         public string? Name { get; set; }

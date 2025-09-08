@@ -28,7 +28,7 @@ namespace Tests.Voiseed
             var action = new SpeechActions(InvocationContext, FileManager);
             var response = await action.ConvertWaitAndDownload(new()
             {
-                Text = new[] { "Hello, this is a test. with united actions", "Hello, this is a test two. with united actions " },
+                Text = "Hello, this is a test. with united actions",
                 LanguageId = "fr-fr",
                 Voice = "Laura",
             });

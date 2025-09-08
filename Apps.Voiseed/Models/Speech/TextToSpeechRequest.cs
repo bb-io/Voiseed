@@ -7,7 +7,7 @@ namespace Apps.Voiseed.Models.Speech
 {
     public class TextToSpeechRequest
     {
-        public IEnumerable<string> Text { get; set; }
+        public string Text { get; set; }
 
         [Display("Language")]
         [DataSource(typeof(LanguagesDataHandler))]

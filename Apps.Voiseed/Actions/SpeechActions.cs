@@ -125,34 +125,19 @@ namespace Apps.Voiseed.Actions
         {
             var client = new VoiseedClient(invocationContext.AuthenticationCredentialsProviders);
 
-            var texts = (input.Text ?? Enumerable.Empty<string>())
-                .Where(t => !string.IsNullOrWhiteSpace(t))
-                .ToList();
-            if (texts.Count == 0)
-                throw new PluginApplicationException("Text must contain at least one non-empty string.");
+            var text = (input.Text ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(text))
+                throw new PluginApplicationException("Text must contain a non-empty string.");
 
-            var stylesRaw = (input.Styles ?? Enumerable.Empty<string>())
+            var style = (input.Styles ?? Enumerable.Empty<string>())
                 .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
                 .ToList();
 
-            List<string> styles;
-            if (stylesRaw.Count == 0)
-            {
-                styles = Enumerable.Repeat("narration-normal", texts.Count).ToList();
-            }
-            else if (stylesRaw.Count == 1 && texts.Count > 1)
-            {
-                styles = Enumerable.Repeat(stylesRaw[0], texts.Count).ToList();
-            }
-            else if (stylesRaw.Count == texts.Count)
-            {
-                styles = stylesRaw;
-            }
-            else
-            {
-                throw new PluginMisconfigurationException(
-                    $"'styles' length ({stylesRaw.Count}) must be 1 or equal to 'texts' length ({texts.Count}).");
-            }
+            string finalStyle;
+            if (style.Count == 0) finalStyle = "narration-normal";
+            else if (style.Count == 1) finalStyle = style[0];
+            else throw new PluginMisconfigurationException($"Only one style is supported for a single text. Received: {style.Count}.");
 
             if (string.IsNullOrWhiteSpace(input.Voice))
                 throw new PluginMisconfigurationException("Voice is required.");
@@ -161,8 +146,8 @@ namespace Apps.Voiseed.Actions
 
             var body = new Dictionary<string, object>
             {
-                ["texts"] = texts,
-                ["styles"] = styles,
+                ["texts"] = new[] { text },
+                ["styles"] = new[] { finalStyle },
                 ["model"] = ModelName,
                 ["languageId"] = input.LanguageId,
                 ["voice"] = input.Voice
@@ -202,9 +187,7 @@ namespace Apps.Voiseed.Actions
                 var raw = st?.Status ?? string.Empty;
                 var status = raw.Trim().ToLowerInvariant();
 
-                if (status == "success")
-                    break;
-
+                if (status == "success") break;
                 if (status == "failure" || status == "failed" || status == "error")
                     throw new PluginApplicationException($"Inference '{requestId}' finished with error status '{raw}'.");
 
@@ -213,34 +196,32 @@ namespace Apps.Voiseed.Actions
                 delay = TimeSpan.FromMilliseconds(nextMs);
             }
 
-            var allUrls = new List<string>();
+            string? firstUrl = null;
             var page = 1;
-            while (true)
+            while (firstUrl == null)
             {
                 var dlReq = new RestRequest($"/inference/{requestId}/download", Method.Get)
                     .AddParameter("page", page, ParameterType.QueryString);
 
                 var pageObj = await client.ExecuteWithErrorHandling<Newtonsoft.Json.Linq.JObject>(dlReq);
                 var urls = pageObj.SelectToken("urls")?.ToObject<List<string>>() ?? new List<string>();
-                if (urls.Count == 0) break;
 
-                allUrls.AddRange(urls);
-                page++;
+                if (urls.Count > 0)
+                    firstUrl = urls[0];
+                else if (page > 3)
+                    break;
+                else
+                    page++;
             }
 
-            if (allUrls.Count == 0)
-                return new FileResponse { Files = Array.Empty<FileReference>() };
+            if (string.IsNullOrWhiteSpace(firstUrl))
+                throw new PluginApplicationException("No audio URL was returned for the inference.");
 
-            var files = new List<FileReference>();
-            for (int i = 0; i < allUrls.Count; i++)
-            {
-                var blob = await FileDownloader.DownloadFileBytes(allUrls[i]);
-                var (finalName, finalContentType) = NormalizeAsWav(blob.Name, blob.ContentType, i);
-                var fr = await fileManagementClient.UploadAsync(blob.FileStream, finalContentType, finalName);
-                files.Add(fr);
-            }
+            var blob = await FileDownloader.DownloadFileBytes(firstUrl);
+            var (finalName, finalContentType) = NormalizeAsWav(blob.Name, blob.ContentType, 0);
+            var fr = await fileManagementClient.UploadAsync(blob.FileStream, finalContentType, finalName);
 
-            return new FileResponse { Files = files };
+            return new FileResponse { File = fr };
         }
 
 
