@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <Product>Voiseed Revoiceit [Beta]</Product>
         <Description>Voiseed's professional virtual studio for expressive AI voices. Makes it easy for your team to collaborate on voice localization projects.</Description>
-        <Version>1.0.3</Version>
+        <Version>1.0.4</Version>
         <AssemblyName>Apps.Voiseed</AssemblyName>
     </PropertyGroup>
 
