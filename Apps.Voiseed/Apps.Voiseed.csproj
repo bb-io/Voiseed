@@ -4,9 +4,9 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Product>Voiseed [Beta]</Product>
-        <Description>Professional virtual studio for expressive AI voices. Makes it easy for your team to collaborate on voice localization projects</Description>
-        <Version>1.0.2</Version>
+        <Product>Voiseed Revoiceit [Beta]</Product>
+        <Description>Voiseed's professional virtual studio for expressive AI voices. Makes it easy for your team to collaborate on voice localization projects.</Description>
+        <Version>1.0.3</Version>
         <AssemblyName>Apps.Voiseed</AssemblyName>
     </PropertyGroup>
 
