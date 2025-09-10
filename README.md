@@ -34,7 +34,7 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 ## Example
 
-![Example](/image/README/convert-text-to-speech2.png)
+![Example](/image/README/convert-text-to-speech.png)
 
 The following bird shows how to convert text to speech using Voiseed app.
 
