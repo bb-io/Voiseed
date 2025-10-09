@@ -3,154 +3,152 @@ using Apps.Voiseed.Models.Speech;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
-using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Utilities;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using RestSharp;
 
-namespace Apps.Voiseed.Actions
+namespace Apps.Voiseed.Actions;
+
+[ActionList("Speech")]
+public class SpeechActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
 {
-    [ActionList("Speech")]
-    public class SpeechActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
+
+    [Action("Convert text to speech", Description = "Convert provided text to a speech with selected settings")]
+    public async Task<FileResponse> ConvertWaitAndDownload(
+        [ActionParameter] TextToSpeechRequest input)
     {
+        var client = new VoiseedClient(invocationContext.AuthenticationCredentialsProviders);
 
-        [Action("Convert text to speech", Description = "Convert provided text to a speech with selected settings")]
-        public async Task<FileResponse> ConvertWaitAndDownload(
-            [ActionParameter] TextToSpeechRequest input)
+        var text = (input.Text ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(text))
+            throw new PluginApplicationException("Text must contain a non-empty string.");
+
+        var finalStyle = string.IsNullOrWhiteSpace(input.Style)
+            ? "narration-normal"
+            : input.Style.Trim();
+        if (string.IsNullOrWhiteSpace(input.Voice))
+            throw new PluginMisconfigurationException("Voice is required.");
+
+        const string ModelName = "xpressive";
+
+        var body = new Dictionary<string, object>
         {
-            var client = new VoiseedClient(invocationContext.AuthenticationCredentialsProviders);
+            ["texts"] = new[] { text },
+            ["styles"] = new[] { finalStyle },
+            ["model"] = ModelName,
+            ["languageId"] = input.LanguageId,
+            ["voice"] = input.Voice
+        };
 
-            var text = (input.Text ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(text))
-                throw new PluginApplicationException("Text must contain a non-empty string.");
+        if (input.GlossaryIds?.Any() == true) body["glossaryIds"] = input.GlossaryIds;
+        if (!string.IsNullOrWhiteSpace(input.ExternalRequestId)) body["externalRequestId"] = input.ExternalRequestId;
 
-            var finalStyle = string.IsNullOrWhiteSpace(input.Style)
-                ? "narration-normal"
-                : input.Style.Trim();
-            if (string.IsNullOrWhiteSpace(input.Voice))
-                throw new PluginMisconfigurationException("Voice is required.");
+        var adv = new Dictionary<string, object>();
+        if (input.Seed.HasValue) adv["seed"] = input.Seed;
+        if (input.Diversity.HasValue) adv["diversity"] = input.Diversity;
+        if (input.Expressivity.HasValue) adv["expressivity"] = input.Expressivity;
 
-            const string ModelName = "xpressive";
+        var aq = new Dictionary<string, object>();
+        if (input.OutputBitrate.HasValue) aq["outputBitrate"] = input.OutputBitrate;
+        if (input.OutputSamplingRate.HasValue) aq["outputSamplingRate"] = input.OutputSamplingRate;
+        if (aq.Count > 0) adv["audioQuality"] = aq;
 
-            var body = new Dictionary<string, object>
-            {
-                ["texts"] = new[] { text },
-                ["styles"] = new[] { finalStyle },
-                ["model"] = ModelName,
-                ["languageId"] = input.LanguageId,
-                ["voice"] = input.Voice
-            };
+        if (adv.Count > 0)
+            body["advancedSettings"] = adv;
 
-            if (input.GlossaryIds?.Any() == true) body["glossaryIds"] = input.GlossaryIds;
-            if (!string.IsNullOrWhiteSpace(input.ExternalRequestId)) body["externalRequestId"] = input.ExternalRequestId;
+        var payload = Newtonsoft.Json.JsonConvert.SerializeObject(
+            body,
+            new Newtonsoft.Json.JsonSerializerSettings { NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore }
+        );
 
-            var adv = new Dictionary<string, object>();
-            if (input.Seed.HasValue) adv["seed"] = input.Seed;
-            if (input.Diversity.HasValue) adv["diversity"] = input.Diversity;
-            if (input.Expressivity.HasValue) adv["expressivity"] = input.Expressivity;
+        var createReq = new RestRequest("/inference", Method.Post).AddStringBody(payload, DataFormat.Json);
+        var created = await client.ExecuteWithErrorHandling<Apps.Voiseed.Models.Speech.TextToSpeechResponse>(createReq);
+        var requestId = created?.RequestId ?? throw new PluginApplicationException("Inference created but no 'requestId' in response.");
 
-            var aq = new Dictionary<string, object>();
-            if (input.OutputBitrate.HasValue) aq["outputBitrate"] = input.OutputBitrate;
-            if (input.OutputSamplingRate.HasValue) aq["outputSamplingRate"] = input.OutputSamplingRate;
-            if (aq.Count > 0) adv["audioQuality"] = aq;
+        var delay = TimeSpan.FromMilliseconds(800);
+        while (true)
+        {
+            var stReq = new RestRequest($"/inference/{requestId}/status", Method.Get);
+            var st = await client.ExecuteWithErrorHandling<Apps.Voiseed.Models.Speech.TextToSpeechStatusResponse>(stReq);
 
-            if (adv.Count > 0)
-                body["advancedSettings"] = adv;
+            var raw = st?.Status ?? string.Empty;
+            var status = raw.Trim().ToLowerInvariant();
 
-            var payload = Newtonsoft.Json.JsonConvert.SerializeObject(
-                body,
-                new Newtonsoft.Json.JsonSerializerSettings { NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore }
-            );
+            if (status == "success") break;
+            if (status == "failure" || status == "failed" || status == "error")
+                throw new PluginApplicationException($"Inference '{requestId}' finished with error status '{raw}'.");
 
-            var createReq = new RestRequest("/inference", Method.Post).AddStringBody(payload, DataFormat.Json);
-            var created = await client.ExecuteWithErrorHandling<Apps.Voiseed.Models.Speech.TextToSpeechResponse>(createReq);
-            var requestId = created?.RequestId ?? throw new PluginApplicationException("Inference created but no 'requestId' in response.");
-
-            var delay = TimeSpan.FromMilliseconds(800);
-            while (true)
-            {
-                var stReq = new RestRequest($"/inference/{requestId}/status", Method.Get);
-                var st = await client.ExecuteWithErrorHandling<Apps.Voiseed.Models.Speech.TextToSpeechStatusResponse>(stReq);
-
-                var raw = st?.Status ?? string.Empty;
-                var status = raw.Trim().ToLowerInvariant();
-
-                if (status == "success") break;
-                if (status == "failure" || status == "failed" || status == "error")
-                    throw new PluginApplicationException($"Inference '{requestId}' finished with error status '{raw}'.");
-
-                await Task.Delay(delay);
-                var nextMs = Math.Min(delay.TotalMilliseconds * 1.8 + Random.Shared.Next(0, 250), 5000);
-                delay = TimeSpan.FromMilliseconds(nextMs);
-            }
-
-            string? firstUrl = null;
-            var page = 1;
-            while (firstUrl == null)
-            {
-                var dlReq = new RestRequest($"/inference/{requestId}/download", Method.Get)
-                    .AddParameter("page", page, ParameterType.QueryString);
-
-                var pageObj = await client.ExecuteWithErrorHandling<Newtonsoft.Json.Linq.JObject>(dlReq);
-                var urls = pageObj.SelectToken("urls")?.ToObject<List<string>>() ?? new List<string>();
-
-                if (urls.Count > 0)
-                    firstUrl = urls[0];
-                else if (page > 3)
-                    break;
-                else
-                    page++;
-            }
-
-            if (string.IsNullOrWhiteSpace(firstUrl))
-                throw new PluginApplicationException("No audio URL was returned for the inference.");
-
-            var blob = await FileDownloader.DownloadFileBytes(firstUrl);
-            var (finalName, finalContentType) = NormalizeAsWav(blob.Name, blob.ContentType, 0);
-            var fr = await fileManagementClient.UploadAsync(blob.FileStream, finalContentType, finalName);
-
-            return new FileResponse { File = fr };
+            await Task.Delay(delay);
+            var nextMs = Math.Min(delay.TotalMilliseconds * 1.8 + Random.Shared.Next(0, 250), 5000);
+            delay = TimeSpan.FromMilliseconds(nextMs);
         }
 
-
-        public (string name, string contentType) NormalizeAsWav(string? originalName, string? originalCt, int index)
+        string? firstUrl = null;
+        var page = 1;
+        while (firstUrl == null)
         {
-            string name = string.IsNullOrWhiteSpace(originalName)
-                ? $"voiseed_line_{index:000}.wav"
-                : originalName!;
+            var dlReq = new RestRequest($"/inference/{requestId}/download", Method.Get)
+                .AddParameter("page", page, ParameterType.QueryString);
 
-            string ext = System.IO.Path.GetExtension(name);
-            string ct = originalCt ?? "";
+            var pageObj = await client.ExecuteWithErrorHandling<Newtonsoft.Json.Linq.JObject>(dlReq);
+            var urls = pageObj.SelectToken("urls")?.ToObject<List<string>>() ?? new List<string>();
 
-            if (string.IsNullOrWhiteSpace(ext))
-            {
-                name = $"{System.IO.Path.GetFileNameWithoutExtension(name)}.wav";
-                return (name, "audio/wav");
-            }
-
-            if (ext.Equals(".wav", StringComparison.OrdinalIgnoreCase))
-                return (name, "audio/wav");
-
-            if (ct.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(ct))
-            {
-                var mapped = MapContentTypeByExt(ext);
-                if (!string.IsNullOrEmpty(mapped)) ct = mapped;
-            }
-            return (name, string.IsNullOrWhiteSpace(ct) ? "application/octet-stream" : ct);
+            if (urls.Count > 0)
+                firstUrl = urls[0];
+            else if (page > 3)
+                break;
+            else
+                page++;
         }
 
-        public string? MapContentTypeByExt(string ext)
+        if (string.IsNullOrWhiteSpace(firstUrl))
+            throw new PluginApplicationException("No audio URL was returned for the inference.");
+
+        var blob = await FileDownloader.DownloadFileBytes(firstUrl);
+        var (finalName, finalContentType) = NormalizeAsWav(blob.Name, blob.ContentType, 0);
+        var fr = await fileManagementClient.UploadAsync(blob.FileStream, finalContentType, finalName);
+
+        return new FileResponse { File = fr };
+    }
+
+
+    public (string name, string contentType) NormalizeAsWav(string? originalName, string? originalCt, int index)
+    {
+        string name = string.IsNullOrWhiteSpace(originalName)
+            ? $"voiseed_line_{index:000}.wav"
+            : originalName!;
+
+        string ext = System.IO.Path.GetExtension(name);
+        string ct = originalCt ?? "";
+
+        if (string.IsNullOrWhiteSpace(ext))
         {
-            switch (ext.ToLowerInvariant())
-            {
-                case ".wav": return "audio/wav";
-                case ".mp3": return "audio/mpeg";
-                case ".ogg": return "audio/ogg";
-                case ".m4a": return "audio/mp4";
-                case ".flac": return "audio/flac";
-                default: return null;
-            }
+            name = $"{System.IO.Path.GetFileNameWithoutExtension(name)}.wav";
+            return (name, "audio/wav");
+        }
+
+        if (ext.Equals(".wav", StringComparison.OrdinalIgnoreCase))
+            return (name, "audio/wav");
+
+        if (ct.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(ct))
+        {
+            var mapped = MapContentTypeByExt(ext);
+            if (!string.IsNullOrEmpty(mapped)) ct = mapped;
+        }
+        return (name, string.IsNullOrWhiteSpace(ct) ? "application/octet-stream" : ct);
+    }
+
+    public string? MapContentTypeByExt(string ext)
+    {
+        switch (ext.ToLowerInvariant())
+        {
+            case ".wav": return "audio/wav";
+            case ".mp3": return "audio/mpeg";
+            case ".ogg": return "audio/ogg";
+            case ".m4a": return "audio/mp4";
+            case ".flac": return "audio/flac";
+            default: return null;
         }
     }
 }

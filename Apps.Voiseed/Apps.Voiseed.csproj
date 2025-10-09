@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <Product>Voiseed Revoiceit [Beta]</Product>
         <Description>Voiseed's professional virtual studio for expressive AI voices. Makes it easy for your team to collaborate on voice localization projects.</Description>
-        <Version>1.0.4</Version>
+        <Version>1.0.5</Version>
         <AssemblyName>Apps.Voiseed</AssemblyName>
     </PropertyGroup>
 
@@ -15,7 +15,7 @@
 	</ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="2.13.0" />
+        <PackageReference Include="Blackbird.Applications.SDK.Blueprints" Version="1.0.0-rc.10308" />
         <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.25" />
         <PackageReference Include="ClosedXML" Version="0.105.0" />
     </ItemGroup>
