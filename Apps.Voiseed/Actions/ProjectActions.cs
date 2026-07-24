@@ -25,7 +25,7 @@ public class ProjectActions(InvocationContext invocationContext) : Invocable(inv
     }
 
     [Action("Get project", Description = "Gets project by ID")]
-    public async Task<ProjectDto> SearchProjects([ActionParameter][Display("Project ID")] string projectId)
+    public async Task<ProjectDto> GetProject([ActionParameter][Display("Project ID")] string projectId)
     {
         var endpoint = $"/projects/{projectId}";
 
@@ -33,7 +33,6 @@ public class ProjectActions(InvocationContext invocationContext) : Invocable(inv
 
         return await Client.ExecuteWithErrorHandling<ProjectDto>(request);
     }
-
 
     [Action("Create project", Description = "Creates project")]
     public async Task<ProjectDto> CreateProject([ActionParameter] CreateAudioProductionProjectRequest input)
@@ -52,6 +51,4 @@ public class ProjectActions(InvocationContext invocationContext) : Invocable(inv
         var req = new RestRequest("/projects", Method.Post).AddJsonBody(body);
         return await client.ExecuteWithErrorHandling<ProjectDto>(req);
     }
-
-
 }
