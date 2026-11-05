@@ -8,13 +8,7 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="TestFiles\**" />
-    <EmbeddedResource Remove="TestFiles\**" />
-    <None Remove="TestFiles\**" />
-  </ItemGroup>
-
+	
   <ItemGroup>
     <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="2.14.0" />
     <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.26" />
