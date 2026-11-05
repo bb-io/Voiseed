@@ -12,13 +12,13 @@ public class VoiseedClient : BlackBirdRestClient
 {
     public VoiseedClient(IEnumerable<AuthenticationCredentialsProvider> creds) : base(new()
     {
-        BaseUrl = new Uri("https://api.revoiceit.com"),
+        BaseUrl = new Uri("https://api.voiseed.com"),
         MaxTimeout = 300000
     })
     {
         var token = GetToken(creds.First(x => x.KeyName == CredsNames.ClientId).Value,
             creds.First(x => x.KeyName == CredsNames.ClientSecret).Value).GetAwaiter().GetResult();
-        this.AddDefaultHeader("Authorization", token);
+        this.AddDefaultHeader("Authorization", $"Bearer {token}");
     }
 
     public override async Task<T> ExecuteWithErrorHandling<T>(RestRequest request)
@@ -46,7 +46,18 @@ public class VoiseedClient : BlackBirdRestClient
 
     protected override Exception ConfigureErrorException(RestResponse response)
     {
-        throw new PluginApplicationException(response.Content);
+        var details = !string.IsNullOrWhiteSpace(response.Content)
+            ? response.Content
+            : response.ErrorMessage;
+        var message = $"Voiseed API request failed with status code {(int)response.StatusCode} " +
+                      $"({response.StatusDescription}).";
+
+        if (!string.IsNullOrWhiteSpace(details))
+        {
+            message += $" {details}";
+        }
+
+        return new PluginApplicationException(message);
     }
 
     private async Task<string> GetToken(string clientId, string clientSecret)

@@ -14,11 +14,12 @@ public class ProjectActions(InvocationContext invocationContext) : Invocable(inv
     [Action("Search projects", Description = "Searches projects")]
     public async Task<ProjectsListResponse> SearchProjects([ActionParameter] SearchProjectsRequest input)
     {
-        var endpoint = string.IsNullOrWhiteSpace(input.ProjectType)
-            ? "/projects"
-            : $"/projects/{input.ProjectType}";
+        var request = new RestRequest("/projects", Method.Get);
+        if (!string.IsNullOrWhiteSpace(input.ProjectType))
+        {
+            request.AddQueryParameter("type", input.ProjectType);
+        }
 
-        var request = new RestRequest(endpoint, Method.Get);
         var response = await Client.ExecuteWithErrorHandling<List<ProjectDto>>(request);
 
         return new ProjectsListResponse { Projects = response };
@@ -39,14 +40,18 @@ public class ProjectActions(InvocationContext invocationContext) : Invocable(inv
     {
         var client = new VoiseedClient(invocationContext.AuthenticationCredentialsProviders);
 
-        var body = new
+        var body = new Dictionary<string, object>
         {
-            name = input.Name,
-            targetLanguages = input.TargetLanguages,
-            type = "audio-production",
-            model = input.Model,
-            sourceLanguage = input.SourceLanguage 
+            ["name"] = input.Name,
+            ["targetLanguages"] = input.TargetLanguages,
+            ["type"] = "audio-production",
+            ["model"] = input.Model
         };
+
+        if (!string.IsNullOrWhiteSpace(input.SourceLanguage))
+        {
+            body["sourceLanguage"] = input.SourceLanguage;
+        }
 
         var req = new RestRequest("/projects", Method.Post).AddJsonBody(body);
         return await client.ExecuteWithErrorHandling<ProjectDto>(req);
