@@ -13,9 +13,30 @@ namespace Tests.Voiseed
 
             var response = await action.CreateProject(new()
             {
-                Name = "Test Project local call",    
+                Name = "Test Project local call 511",    
                 Model = "xpressive",
-                TargetLanguages = ["fr-fr"]
+                TargetLanguages = ["fr-fr"],
+                SourceLanguage = "en-us"
+            });
+
+        }
+
+        [TestMethod]
+        public async Task GetProject_IsSuccess()
+        {
+            var action = new ProjectActions(InvocationContext);
+
+            var response = await action.GetProject("2990163e-3c84-4cc8-a743-24ebbaf6afa7");
+
+        }
+
+        [TestMethod]
+        public async Task SearchProjects_IsSuccess()
+        {
+            var action = new ProjectActions(InvocationContext);
+
+            var response = await action.SearchProjects(new()
+            {
             });
 
         }
