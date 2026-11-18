@@ -6,7 +6,7 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 <!-- begin docs -->
 
-[Revoiceit`s](https://docs.revoiceit.com/docs/api/Authentication/), start by creating your API key:
+[Revoiceit's](https://docs.voiseed.com/api/Authentication/), start by creating your API key:
 
 - Go in the upper left corner of application and click on menu.
 - Select "API" from the dropdown menu.
